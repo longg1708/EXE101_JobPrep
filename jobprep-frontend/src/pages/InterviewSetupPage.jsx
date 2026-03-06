@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useState, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import logo from "../assets/images/jobprep-logo.png"
 
 const industries = ["Software Engineering", "Data Science", "Marketing", "Finance", "Product Management"]
@@ -47,6 +47,55 @@ export default function InterviewSetupPage() {
     const [selectedLevel, setSelectedLevel] = useState("Intern")
     const [selectedType, setSelectedType] = useState("Technical")
 
+    // CV Upload State
+    const [isScanning, setIsScanning] = useState(false)
+    const [scanProgress, setScanProgress] = useState(0)
+    const [cvName, setCvName] = useState("")
+    const [isAutoSelected, setIsAutoSelected] = useState(false)
+    const fileInputRef = useRef(null)
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            startAIScan(file.name)
+        }
+    }
+
+    const startAIScan = (fileName) => {
+        setIsScanning(true)
+        setScanProgress(0)
+        setCvName(fileName)
+        setIsAutoSelected(false)
+
+        // Simulate scanning progress
+        const interval = setInterval(() => {
+            setScanProgress((prev) => {
+                if (prev >= 100) {
+                    clearInterval(interval)
+                    completeAIScan()
+                    return 100
+                }
+                return prev + 5
+            })
+        }, 100)
+    }
+
+    const completeAIScan = () => {
+        setTimeout(() => {
+            // Mock AI logic: randomly select professional settings
+            const randomIndustry = industries[Math.floor(Math.random() * industries.length)]
+            const randomLevel = experienceLevels[Math.floor(Math.random() * experienceLevels.length)].label
+            const randomType = interviewTypes[Math.floor(Math.random() * interviewTypes.length)].label
+
+            setSelectedIndustry(randomIndustry)
+            setSelectedLevel(randomLevel)
+            setSelectedType(randomType)
+
+            setIsScanning(false)
+            setIsAutoSelected(true)
+        }, 500)
+    }
+
     return (
         <div className="min-h-screen bg-gray-50 font-display flex flex-col">
             {/* Navbar */}
@@ -69,11 +118,95 @@ export default function InterviewSetupPage() {
 
             <main className="flex-1 max-w-3xl mx-auto w-full px-6 py-12">
                 <div className="mb-10 animate-entry">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Interview Setup</h1>
-                    <p className="text-gray-500">Configure your mock interview session to get started.</p>
+                    <div className="flex justify-between items-end mb-2">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Interview Setup</h1>
+                            <p className="text-gray-500">Configure your mock interview session to get started.</p>
+                        </div>
+                        {isAutoSelected && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-bold border border-primary/20 flex items-center gap-1.5"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                </svg>
+                                AI Optimized
+                            </motion.div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-6">
+                    {/* CV Upload Section */}
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 overflow-hidden relative">
+                        <div className="flex items-center gap-2 mb-5">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <h2 className="font-bold text-gray-900 text-lg">Upload Resume (CV)</h2>
+                        </div>
+
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${isScanning ? "border-primary bg-primary/5" : "border-gray-200 hover:border-primary/50 hover:bg-gray-50"
+                                }`}
+                        >
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                accept=".pdf,.doc,.docx"
+                            />
+
+                            <AnimatePresence mode="wait">
+                                {isScanning ? (
+                                    <motion.div
+                                        key="scanning"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="w-full max-w-xs text-center"
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-semibold text-primary">AI Scanning...</span>
+                                            <span className="text-xs text-gray-400">{scanProgress}%</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                            <motion.div
+                                                className="h-full bg-primary"
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${scanProgress}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-3 italic">Analyzing your profile to find the best match</p>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="idle"
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="flex flex-col items-center gap-2"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">
+                                                {cvName ? cvName : "Click or drag your CV here"}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">AI will automatically configure your session</p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
                     {/* Industry Selection */}
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                         <div className="flex items-center gap-2 mb-5">
@@ -96,12 +229,23 @@ export default function InterviewSetupPage() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setSelectedIndustry(ind)}
-                                    className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${selectedIndustry === ind
+                                    className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all relative ${selectedIndustry === ind
                                         ? "bg-primary text-white shadow-sm"
                                         : "bg-gray-50 border border-gray-200 text-gray-600 hover:border-primary hover:text-primary"
                                         }`}
                                 >
                                     {ind}
+                                    {isAutoSelected && selectedIndustry === ind && (
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-2 h-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                            </svg>
+                                        </motion.div>
+                                    )}
                                 </motion.button>
                             ))}
                         </motion.div>
@@ -133,8 +277,11 @@ export default function InterviewSetupPage() {
                                         <motion.div
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
-                                            className="absolute top-3 right-3"
+                                            className="absolute top-3 right-3 flex items-center gap-1.5"
                                         >
+                                            {isAutoSelected && (
+                                                <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider">AI Choice</span>
+                                            )}
                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
@@ -173,8 +320,11 @@ export default function InterviewSetupPage() {
                                         <motion.div
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
-                                            className="absolute top-3 right-3"
+                                            className="absolute top-3 right-3 flex items-center gap-1.5"
                                         >
+                                            {isAutoSelected && (
+                                                <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-md uppercase tracking-wider">AI Pick</span>
+                                            )}
                                             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                             </svg>
